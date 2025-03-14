@@ -31,7 +31,6 @@ pub fn read_asm_file(file_path: String, mem: &mut Memory, curr_mem_add: &mut u16
         }
     }
 }
-
 pub fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     let token_table = populate_string_to_token_table();
     let tokens: Vec<&str> = line.split(" ").collect();
@@ -66,17 +65,40 @@ fn handle_two_character_line(
     let value: &str = &command[1..];
     match special_character {
         '#' => load_immediate_command(found_token, value, mem, curr_mem_add),
+        '$' => load_mem_location_command(found_token, value, mem, curr_mem_add),
         _ => println!("default"),
     }
 }
 fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     match token {
         Token::LDA => {
-            mem.data[*curr_mem_add as usize] = token as u8;
-            *curr_mem_add += 1;
-            mem.data[*curr_mem_add as usize] = util::convert_string_to_u8(value);
-            *curr_mem_add += 1;
+            if is_hex(value) {
+                mem.data[*curr_mem_add as usize] = token as u8;
+                *curr_mem_add += 1;
+                mem.data[*curr_mem_add as usize] = util::convert_hex_string_to_u8(&value[1..]);
+            } else {
+                mem.data[*curr_mem_add as usize] = token as u8;
+                *curr_mem_add += 1;
+                mem.data[*curr_mem_add as usize] = util::convert_string_to_u8(value);
+            }
         }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
     }
+}
+fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+    match token {
+        Token::LDA => {}
+    }
+}
+fn is_hex(value: &str) -> bool {
+    let mut is_hex: bool = false;
+
+    match value.chars().nth(0) {
+        Some(c) if c == '$' => {
+            is_hex = true;
+        }
+        Some(_) => is_hex = false,
+        None => panic!("Syntax error for hex"),
+    }
+    return is_hex;
 }
