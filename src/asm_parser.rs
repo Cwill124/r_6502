@@ -1,16 +1,16 @@
+use crate::memory::Memory;
+use crate::token::Token;
+use crate::util::{self, convert_hex_string_to_u8, is_zero_page};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
-use std::ptr::null;
-use std::vec;
-
-use crate::memory::Memory;
-use crate::token::Token;
-use crate::util;
+use std::mem;
 
 fn populate_string_to_token_table() -> HashMap<&'static str, Token> {
     let mut map = HashMap::new();
     map.insert("LDA", Token::LDA);
+    map.insert("LDX", Token::LDX);
+    map.insert("LDY", Token::LDY);
     map
 }
 
@@ -63,6 +63,7 @@ fn handle_two_character_line(
         None => panic!("Error"),
     }
     let value: &str = &command[1..];
+    //TODO: Add indexed indirect and indirect indexed support
     match special_character {
         '#' => load_immediate_command(found_token, value, mem, curr_mem_add),
         '$' => load_mem_location_command(found_token, value, mem, curr_mem_add),
@@ -72,33 +73,53 @@ fn handle_two_character_line(
 fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     match token {
         Token::LDA => {
-            if is_hex(value) {
-                mem.data[*curr_mem_add as usize] = token as u8;
-                *curr_mem_add += 1;
-                mem.data[*curr_mem_add as usize] = util::convert_hex_string_to_u8(&value[1..]);
-            } else {
-                mem.data[*curr_mem_add as usize] = token as u8;
-                *curr_mem_add += 1;
-                mem.data[*curr_mem_add as usize] = util::convert_string_to_u8(value);
-            }
+            load_register(token, value, mem, curr_mem_add);
+        }
+        Token::LDX => {
+            load_register(token, value, mem, curr_mem_add);
+        }
+        Token::LDY => {
+            load_register(token, value, mem, curr_mem_add);
         }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
     }
 }
 fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     match token {
-        Token::LDA => {}
+        Token::LDA => {
+            load_memory_location(token, value, curr_mem_add, mem);
+        }
+
+        _ => panic!("NO FOUND TOKEN FOR MEM LOCATION COMMAND"),
+    }
+}
+fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+    if is_zero_page(value) {
+        mem.data[*curr_mem_add as usize] = token as u8;
+        *curr_mem_add += 1;
+        mem.data[*curr_mem_add as usize] = convert_hex_string_to_u8(value);
+        *curr_mem_add += 1;
+    }
+}
+fn load_register(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+    if is_hex(value) {
+        mem.data[*curr_mem_add as usize] = token as u8;
+        *curr_mem_add += 1;
+        mem.data[*curr_mem_add as usize] = util::convert_hex_string_to_u8(&value[1..]);
+        *curr_mem_add += 1;
+    } else {
+        mem.data[*curr_mem_add as usize] = token as u8;
+        *curr_mem_add += 1;
+        mem.data[*curr_mem_add as usize] = util::convert_string_to_u8(value);
+        *curr_mem_add += 1;
     }
 }
 fn is_hex(value: &str) -> bool {
-    let mut is_hex: bool = false;
-
     match value.chars().nth(0) {
         Some(c) if c == '$' => {
-            is_hex = true;
+            return true;
         }
-        Some(_) => is_hex = false,
+        Some(_) => return false,
         None => panic!("Syntax error for hex"),
     }
-    return is_hex;
 }
