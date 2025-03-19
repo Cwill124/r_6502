@@ -14,9 +14,14 @@ fn print_memory_table(memory: &[u8]) {
 
     while !stop {
         let value = memory[i];
-        if value > 0 {
+        if i < 100 {
             let hex_string = format!("{:04X}", i);
-            println!("Memory location: 0x{}, value: {}", hex_string, value);
+            let hex_value = format!("{:02X}", value);
+            let bin = format!("{:08b}", value);
+            println!(
+                "Memory location: 0x{}, value: {}, hex: 0x{}, bin: {}",
+                hex_string, value, hex_value, bin
+            );
             i += 1;
         } else {
             stop = true;

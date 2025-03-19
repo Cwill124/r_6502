@@ -5,14 +5,19 @@ use crate::util::{
 };
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
-use std::mem;
+use std::io::{BufRead, BufReader};
 
 fn populate_string_to_token_table() -> HashMap<&'static str, Token> {
     let mut map = HashMap::new();
     map.insert("LDA", Token::LDA);
     map.insert("LDX", Token::LDX);
     map.insert("LDY", Token::LDY);
+    map.insert("ADC", Token::ADC);
+    map.insert("STA", Token::STA);
+    map.insert("STX", Token::STX);
+    map.insert("STY", Token::STY);
+    map.insert("JMP", Token::JMP);
+    map.insert("JSR", Token::JSR);
     map
 }
 
@@ -33,7 +38,7 @@ pub fn read_asm_file(file_path: String, mem: &mut Memory, curr_mem_add: &mut u16
         }
     }
 }
-pub fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     let token_table = populate_string_to_token_table();
     let tokens: Vec<&str> = line.split(" ").collect();
     let amount_of_characters: usize = tokens.len();
@@ -65,7 +70,6 @@ fn handle_two_character_line(
         None => panic!("Error"),
     }
     let value: &str = &command[1..];
-    //TODO: Add indexed indirect and indirect indexed support
     match special_character {
         '#' => load_immediate_command(found_token, value, mem, curr_mem_add),
         '$' => load_mem_location_command(found_token, value, mem, curr_mem_add),
@@ -83,6 +87,9 @@ fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_
         Token::LDY => {
             load_immediate_value(token, value, mem, curr_mem_add);
         }
+        Token::ADC => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
     }
 }
@@ -91,6 +98,12 @@ fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_m
         Token::LDA => load_memory_location(token, value, curr_mem_add, mem),
         Token::LDX => load_memory_location(token, value, curr_mem_add, mem),
         Token::LDY => load_memory_location(token, value, curr_mem_add, mem),
+        Token::ADC => load_memory_location(token, value, curr_mem_add, mem),
+        Token::STA => load_memory_location(token, value, curr_mem_add, mem),
+        Token::STX => load_memory_location(token, value, curr_mem_add, mem),
+        Token::STY => load_memory_location(token, value, curr_mem_add, mem),
+        Token::JMP => load_memory_location(token, value, curr_mem_add, mem),
+        Token::JSR => load_memory_location(token, value, curr_mem_add, mem),
         _ => panic!("NO FOUND TOKEN FOR MEM LOCATION COMMAND"),
     }
 }
@@ -110,11 +123,53 @@ fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: 
                 load_mem_page(Token::LdxAP, value, curr_mem_add, mem);
             }
         }
-        Token::LdyZP => {
+        Token::LDY => {
             if is_zero_page(value) {
                 load_zero_page(Token::LdyZP, value, curr_mem_add, mem)
             } else {
                 load_mem_page(Token::LdyAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::ADC => {
+            if is_zero_page(value) {
+                load_zero_page(Token::AdcZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::AdcAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::STA => {
+            if is_zero_page(value) {
+                load_zero_page(Token::StaZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::StaAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::STX => {
+            if is_zero_page(value) {
+                load_zero_page(Token::StxZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::StxAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::STY => {
+            if is_zero_page(value) {
+                load_zero_page(Token::StyZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::StyAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::JMP => {
+            if is_zero_page(value) {
+                load_zero_page(Token::JMP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::JMP, value, curr_mem_add, mem);
+            }
+        }
+        Token::JSR => {
+            if is_zero_page(value) {
+                load_zero_page(Token::JSR, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::JSR, value, curr_mem_add, mem);
             }
         }
         _ => panic!("NO FOUND TOKEN FOR ZERO PAGE LOADING"),
@@ -131,8 +186,8 @@ fn load_zero_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut M
 fn load_mem_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
     mem.data[*curr_mem_add as usize] = token as u8;
     *curr_mem_add += 1;
-    let h_byte: u8 = convert_hex_string_to_u8(&value[0..1]);
-    let l_byte: u8 = convert_string_to_u8(&value[2..3]);
+    let h_byte: u8 = convert_hex_string_to_u8(&value[0..2]);
+    let l_byte: u8 = convert_hex_string_to_u8(&value[2..4]);
     mem.data[*curr_mem_add as usize] = l_byte;
     *curr_mem_add += 1;
     mem.data[*curr_mem_add as usize] = h_byte;
@@ -152,6 +207,7 @@ fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_ad
         *curr_mem_add += 1;
     }
 }
+
 fn is_hex(value: &str) -> bool {
     match value.chars().nth(0) {
         Some(c) if c == '$' => {
