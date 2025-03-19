@@ -1,3 +1,3 @@
-LDA $01
+LDA $FF21
 LDX #32
 LDY #$032

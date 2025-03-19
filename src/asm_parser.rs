@@ -1,6 +1,8 @@
 use crate::memory::Memory;
 use crate::token::Token;
-use crate::util::{self, convert_hex_string_to_u8, is_zero_page};
+use crate::util::{
+    self, convert_hex_string_to_u8, convert_string_to_u16, convert_string_to_u8, is_zero_page,
+};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
@@ -73,35 +75,71 @@ fn handle_two_character_line(
 fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     match token {
         Token::LDA => {
-            load_register(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add);
         }
         Token::LDX => {
-            load_register(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add);
         }
         Token::LDY => {
-            load_register(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add);
         }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
     }
 }
 fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     match token {
-        Token::LDA => {
-            load_memory_location(token, value, curr_mem_add, mem);
-        }
-
+        Token::LDA => load_memory_location(token, value, curr_mem_add, mem),
+        Token::LDX => load_memory_location(token, value, curr_mem_add, mem),
+        Token::LDY => load_memory_location(token, value, curr_mem_add, mem),
         _ => panic!("NO FOUND TOKEN FOR MEM LOCATION COMMAND"),
     }
 }
 fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
-    if is_zero_page(value) {
-        mem.data[*curr_mem_add as usize] = token as u8;
-        *curr_mem_add += 1;
-        mem.data[*curr_mem_add as usize] = convert_hex_string_to_u8(value);
-        *curr_mem_add += 1;
+    match token {
+        Token::LDA => {
+            if is_zero_page(value) {
+                load_zero_page(Token::LdaZP, value, curr_mem_add, mem)
+            } else {
+                load_mem_page(Token::LdaAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::LDX => {
+            if is_zero_page(value) {
+                load_zero_page(Token::LdxZP, value, curr_mem_add, mem)
+            } else {
+                load_mem_page(Token::LdxAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::LdyZP => {
+            if is_zero_page(value) {
+                load_zero_page(Token::LdyZP, value, curr_mem_add, mem)
+            } else {
+                load_mem_page(Token::LdyAP, value, curr_mem_add, mem);
+            }
+        }
+        _ => panic!("NO FOUND TOKEN FOR ZERO PAGE LOADING"),
     }
 }
-fn load_register(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+
+fn load_zero_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+    mem.data[*curr_mem_add as usize] = token as u8;
+    *curr_mem_add += 1;
+    mem.data[*curr_mem_add as usize] = convert_hex_string_to_u8(value);
+    *curr_mem_add += 1;
+}
+
+fn load_mem_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+    mem.data[*curr_mem_add as usize] = token as u8;
+    *curr_mem_add += 1;
+    let h_byte: u8 = convert_hex_string_to_u8(&value[0..1]);
+    let l_byte: u8 = convert_string_to_u8(&value[2..3]);
+    mem.data[*curr_mem_add as usize] = l_byte;
+    *curr_mem_add += 1;
+    mem.data[*curr_mem_add as usize] = h_byte;
+    *curr_mem_add += 1;
+}
+
+fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     if is_hex(value) {
         mem.data[*curr_mem_add as usize] = token as u8;
         *curr_mem_add += 1;
