@@ -74,17 +74,28 @@ pub fn read_asm_file(file_path: String, mem: &mut Memory, curr_mem_add: &mut u16
             return;
         }
     };
+    let token_table = populate_string_to_token_table();
     let reader = BufReader::new(file);
 
     for line in reader.lines() {
         match line {
-            Ok(line) => parse_line(&line, mem, curr_mem_add),
+            Ok(line) => {
+                if line.is_empty() {
+                    continue;
+                } else {
+                    parse_line(&line, mem, curr_mem_add, &token_table)
+                }
+            }
             Err(e) => eprintln!("Error reading line {}", e),
         }
     }
 }
-fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
-    let token_table = populate_string_to_token_table();
+fn parse_line(
+    line: &str,
+    mem: &mut Memory,
+    curr_mem_add: &mut u16,
+    token_table: &HashMap<&str, Token>,
+) {
     let tokens: Vec<&str> = line.split(" ").collect();
     let amount_of_characters: usize = tokens.len();
     if amount_of_characters == 1 {
@@ -96,7 +107,7 @@ fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
 fn handle_one_character_line(
     token: &str,
     mem: &mut Memory,
-    token_table: HashMap<&str, Token>,
+    token_table: &HashMap<&str, Token>,
     curr_mem_add: &mut u16,
 ) {
     let found_token: Token;
@@ -149,7 +160,7 @@ fn handle_one_character_line(
 fn handle_two_character_line(
     tokens: Vec<&str>,
     mem: &mut Memory,
-    token_table: HashMap<&str, Token>,
+    token_table: &HashMap<&str, Token>,
     curr_mem_add: &mut u16,
 ) {
     let token: &str = tokens[0];
@@ -228,6 +239,20 @@ fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_m
         Token::STY => load_memory_location(token, value, curr_mem_add, mem),
         Token::JMP => load_memory_location(token, value, curr_mem_add, mem),
         Token::JSR => load_memory_location(token, value, curr_mem_add, mem),
+        Token::AND => load_memory_location(token, value, curr_mem_add, mem),
+        Token::ASL => load_memory_location(token, value, curr_mem_add, mem),
+        Token::BIT => load_memory_location(token, value, curr_mem_add, mem),
+        Token::CMP => load_memory_location(token, value, curr_mem_add, mem),
+        Token::CPX => load_memory_location(token, value, curr_mem_add, mem),
+        Token::CPY => load_memory_location(token, value, curr_mem_add, mem),
+        Token::DEC => load_memory_location(token, value, curr_mem_add, mem),
+        Token::EOR => load_memory_location(token, value, curr_mem_add, mem),
+        Token::INC => load_memory_location(token, value, curr_mem_add, mem),
+        Token::LSR => load_memory_location(token, value, curr_mem_add, mem),
+        Token::ORA => load_memory_location(token, value, curr_mem_add, mem),
+        Token::ROL => load_memory_location(token, value, curr_mem_add, mem),
+        Token::ROR => load_memory_location(token, value, curr_mem_add, mem),
+        Token::SBC => load_memory_location(token, value, curr_mem_add, mem),
         _ => panic!("NO FOUND TOKEN FOR MEM LOCATION COMMAND"),
     }
 }
@@ -296,6 +321,105 @@ fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: 
                 load_mem_page(Token::JSR, value, curr_mem_add, mem);
             }
         }
+        Token::AND => {
+            if is_zero_page(value) {
+                load_zero_page(Token::AndZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::AndAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::ASL => {
+            if is_zero_page(value) {
+                load_zero_page(Token::AslZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::AslAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::BIT => {
+            if is_zero_page(value) {
+                load_zero_page(Token::BIT, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::BitAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::CMP => {
+            if is_zero_page(value) {
+                load_zero_page(Token::CmpZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::CmpAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::CPX => {
+            if is_zero_page(value) {
+                load_zero_page(Token::CpxZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::CpxAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::CPY => {
+            if is_zero_page(value) {
+                load_zero_page(Token::CpyZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::CpyAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::DEC => {
+            if is_zero_page(value) {
+                load_zero_page(Token::DEC, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::DecAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::EOR => {
+            if is_zero_page(value) {
+                load_zero_page(Token::EorZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::EorAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::INC => {
+            if is_zero_page(value) {
+                load_zero_page(Token::INC, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::IncAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::LSR => {
+            if is_zero_page(value) {
+                load_zero_page(Token::LsrZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::LsrAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::ORA => {
+            if is_zero_page(value) {
+                load_zero_page(Token::OraZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::OraAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::ROL => {
+            if is_zero_page(value) {
+                load_zero_page(Token::RolZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::RolAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::ROR => {
+            if is_zero_page(value) {
+                load_zero_page(Token::RorZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::RorAP, value, curr_mem_add, mem);
+            }
+        }
+        Token::SBC => {
+            if is_zero_page(value) {
+                load_zero_page(Token::SbcZP, value, curr_mem_add, mem);
+            } else {
+                load_mem_page(Token::SbcAP, value, curr_mem_add, mem);
+            }
+        }
+
         _ => panic!("NO FOUND TOKEN FOR ZERO PAGE LOADING"),
     }
 }

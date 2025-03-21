@@ -14,7 +14,7 @@ fn print_memory_table(memory: &[u8]) {
 
     while !stop {
         let value = memory[i];
-        if i < 100 {
+        if i < 150 {
             let hex_string = format!("{:04X}", i);
             let hex_value = format!("{:02X}", value);
             let bin = format!("{:08b}", value);
