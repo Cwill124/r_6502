@@ -1,5 +1,5 @@
 use crate::memory::Memory;
-use crate::token::Token;
+use crate::token::{self, Token};
 use crate::util::{
     self, convert_hex_string_to_u8, convert_string_to_u16, convert_string_to_u8, is_zero_page,
 };
@@ -18,6 +18,53 @@ fn populate_string_to_token_table() -> HashMap<&'static str, Token> {
     map.insert("STY", Token::STY);
     map.insert("JMP", Token::JMP);
     map.insert("JSR", Token::JSR);
+    map.insert("AND", Token::AND);
+    map.insert("ASL", Token::ASL);
+    map.insert("BCC", Token::BCC);
+    map.insert("BCS", Token::BCS);
+    map.insert("BEQ", Token::BEQ);
+    map.insert("BIT", Token::BIT);
+    map.insert("BMI", Token::BMI);
+    map.insert("BNE", Token::BNE);
+    map.insert("BPL", Token::BPL);
+    map.insert("BRK", Token::BRK);
+    map.insert("BVC", Token::BVC);
+    map.insert("BVS", Token::BVS);
+    map.insert("CLC", Token::CLC);
+    map.insert("CLD", Token::CLD);
+    map.insert("CLI", Token::CLI);
+    map.insert("CLV", Token::CLV);
+    map.insert("CMP", Token::CMP);
+    map.insert("CPX", Token::CPX);
+    map.insert("CPY", Token::CPY);
+    map.insert("DEC", Token::DEC);
+    map.insert("DEX", Token::DEX);
+    map.insert("DEY", Token::DEY);
+    map.insert("EOR", Token::EOR);
+    map.insert("INC", Token::INC);
+    map.insert("INX", Token::INX);
+    map.insert("INY", Token::INY);
+    map.insert("LSR", Token::LSR);
+    map.insert("NOP", Token::NOP);
+    map.insert("ORA", Token::ORA);
+    map.insert("PHA", Token::PHA);
+    map.insert("PHP", Token::PHP);
+    map.insert("PLA", Token::PLA);
+    map.insert("PLP", Token::PLP);
+    map.insert("ROL", Token::ROL);
+    map.insert("ROR", Token::ROR);
+    map.insert("RTI", Token::RTI);
+    map.insert("RTS", Token::RTS);
+    map.insert("SBC", Token::SBC);
+    map.insert("SEC", Token::SEC);
+    map.insert("SED", Token::SED);
+    map.insert("SEI", Token::SEI);
+    map.insert("TAX", Token::TAX);
+    map.insert("TAY", Token::TAY);
+    map.insert("TSX", Token::TSX);
+    map.insert("TXA", Token::TXA);
+    map.insert("TXS", Token::TXS);
+    map.insert("TYA", Token::TYA);
     map
 }
 
@@ -43,12 +90,63 @@ fn parse_line(line: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
     let tokens: Vec<&str> = line.split(" ").collect();
     let amount_of_characters: usize = tokens.len();
     if amount_of_characters == 1 {
-        handle_one_character_line();
+        handle_one_character_line(tokens[0], mem, token_table, curr_mem_add);
     } else if amount_of_characters == 2 {
         handle_two_character_line(tokens, mem, token_table, curr_mem_add);
     }
 }
-fn handle_one_character_line() {}
+fn handle_one_character_line(
+    token: &str,
+    mem: &mut Memory,
+    token_table: HashMap<&str, Token>,
+    curr_mem_add: &mut u16,
+) {
+    let found_token: Token;
+
+    match token_table.get(token) {
+        Some(t) => found_token = t.clone(),
+        None => panic!("Syntax error {}", token),
+    }
+    match found_token {
+        Token::ASL => load_relative_value(Token::ASL, mem, curr_mem_add),
+        Token::BCC => load_relative_value(Token::BCC, mem, curr_mem_add),
+        Token::BCS => load_relative_value(Token::BCS, mem, curr_mem_add),
+        Token::BEQ => load_relative_value(Token::BEQ, mem, curr_mem_add),
+        Token::BMI => load_relative_value(Token::BMI, mem, curr_mem_add),
+        Token::BNE => load_relative_value(Token::BNE, mem, curr_mem_add),
+        Token::BPL => load_relative_value(Token::BPL, mem, curr_mem_add),
+        Token::BRK => load_relative_value(Token::BRK, mem, curr_mem_add),
+        Token::BVC => load_relative_value(Token::BVC, mem, curr_mem_add),
+        Token::BVS => load_relative_value(Token::BVS, mem, curr_mem_add),
+        Token::CLC => load_relative_value(Token::CLC, mem, curr_mem_add),
+        Token::CLD => load_relative_value(Token::CLD, mem, curr_mem_add),
+        Token::CLI => load_relative_value(Token::CLI, mem, curr_mem_add),
+        Token::CLV => load_relative_value(Token::CLV, mem, curr_mem_add),
+        Token::DEX => load_relative_value(Token::DEX, mem, curr_mem_add),
+        Token::DEY => load_relative_value(Token::DEY, mem, curr_mem_add),
+        Token::INX => load_relative_value(Token::INX, mem, curr_mem_add),
+        Token::INY => load_relative_value(Token::INY, mem, curr_mem_add),
+        Token::LSR => load_relative_value(Token::LSR, mem, curr_mem_add),
+        Token::NOP => load_relative_value(Token::NOP, mem, curr_mem_add),
+        Token::PHA => load_relative_value(Token::PHA, mem, curr_mem_add),
+        Token::PLA => load_relative_value(Token::PLA, mem, curr_mem_add),
+        Token::PLP => load_relative_value(Token::PLP, mem, curr_mem_add),
+        Token::ROL => load_relative_value(Token::ROL, mem, curr_mem_add),
+        Token::ROR => load_relative_value(Token::ROR, mem, curr_mem_add),
+        Token::RTI => load_relative_value(Token::RTI, mem, curr_mem_add),
+        Token::RTS => load_relative_value(Token::RTS, mem, curr_mem_add),
+        Token::SEC => load_relative_value(Token::SEC, mem, curr_mem_add),
+        Token::SED => load_relative_value(Token::SED, mem, curr_mem_add),
+        Token::SEI => load_relative_value(Token::SEI, mem, curr_mem_add),
+        Token::TAX => load_relative_value(Token::TAX, mem, curr_mem_add),
+        Token::TAY => load_relative_value(Token::TAY, mem, curr_mem_add),
+        Token::TSX => load_relative_value(Token::TSX, mem, curr_mem_add),
+        Token::TXA => load_relative_value(Token::TXA, mem, curr_mem_add),
+        Token::TXS => load_relative_value(Token::TXS, mem, curr_mem_add),
+        Token::TYA => load_relative_value(Token::TYA, mem, curr_mem_add),
+        _ => panic!("NO TOKEN FOUND FOR RELATIVE VALUE"),
+    }
+}
 fn handle_two_character_line(
     tokens: Vec<&str>,
     mem: &mut Memory,
@@ -139,7 +237,7 @@ fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: 
         }
         Token::STA => {
             if is_zero_page(value) {
-                load_zero_page(Token::StaZP, value, curr_mem_add, mem);
+                load_zero_page(Token::STA, value, curr_mem_add, mem);
             } else {
                 load_mem_page(Token::StaAP, value, curr_mem_add, mem);
             }
@@ -208,6 +306,10 @@ fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_ad
     }
 }
 
+fn load_relative_value(token: Token, mem: &mut Memory, curr_mem_add: &mut u16) {
+    mem.data[*curr_mem_add as usize] = token as u8;
+    *curr_mem_add += 1;
+}
 fn is_hex(value: &str) -> bool {
     match value.chars().nth(0) {
         Some(c) if c == '$' => {
