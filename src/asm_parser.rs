@@ -1,8 +1,6 @@
 use crate::memory::Memory;
-use crate::token::{self, Token};
-use crate::util::{
-    self, convert_hex_string_to_u8, convert_string_to_u16, convert_string_to_u8, is_zero_page,
-};
+use crate::token::Token;
+use crate::util::{self, convert_hex_string_to_u8, is_zero_page};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -147,6 +145,7 @@ fn handle_one_character_line(
         _ => panic!("NO TOKEN FOUND FOR RELATIVE VALUE"),
     }
 }
+
 fn handle_two_character_line(
     tokens: Vec<&str>,
     mem: &mut Memory,
@@ -186,6 +185,33 @@ fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_
             load_immediate_value(token, value, mem, curr_mem_add);
         }
         Token::ADC => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::AND => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::CMP => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::CPX => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::CPY => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::EOR => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::ORA => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::ROL => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::ROR => {
+            load_immediate_value(token, value, mem, curr_mem_add);
+        }
+        Token::SBC => {
             load_immediate_value(token, value, mem, curr_mem_add);
         }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
