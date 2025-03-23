@@ -1,7 +1,9 @@
+use std::hash::Hash;
 // TODO: REFACTOR THE TOKENS THAT DO NOT HAVE IMMEDIATE COMMAND TO HAVE ZERO PAGE AS DEFAULT
 
 #[repr(u8)] // Optional, specifies the underlying representation of the enum (e.g., as a number)
 #[derive(Clone, Debug)]
+#[derive(Hash,PartialEq, Eq)]
 pub enum Token {
     LDA = 0x89,
     LdaZP = 0xA5,
@@ -17,11 +19,9 @@ pub enum Token {
     AdcAP = 0x6D,
     STA = 0x95,
     StaAP = 0x8D,
-    STX = 0x01,
-    StxZP = 0x86,
+    STX = 0x86,
     StxAP = 0x96,
-    STY = 0x02,
-    StyZP = 0x84,
+    STY = 0x84,
     StyAP = 0x94,
     JMP = 0x4C,
     JmpID = 0x6C,
@@ -99,3 +99,4 @@ pub enum Token {
     TXS = 0x9A,
     TYA = 0x98,
 }
+

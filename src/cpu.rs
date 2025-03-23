@@ -30,7 +30,7 @@ impl CPU {
             v: 0,
             n: 0,
         };
-        cpu.memory.initialise();
+        cpu.memory.init();
         cpu
     }
 

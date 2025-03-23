@@ -1,9 +1,11 @@
 use crate::memory::Memory;
 use crate::token::Token;
+use crate::cycle_map;
 use crate::util::{self, convert_hex_string_to_u8, is_zero_page};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
 
 /// Populates a `HashMap` mapping assembly instruction mnemonics to their corresponding `Token` variants.
 ///
@@ -113,6 +115,7 @@ pub fn read_asm_file(file_path: String, mem: &mut Memory, curr_mem_add: &mut u16
         }
     };
     let token_table = populate_string_to_token_table();
+    let token_cycle_table = cycle_map::init();
     let reader = BufReader::new(file);
 
     for line in reader.lines() {
@@ -121,7 +124,7 @@ pub fn read_asm_file(file_path: String, mem: &mut Memory, curr_mem_add: &mut u16
                 if line.is_empty() {
                     continue;
                 } else {
-                    parse_line(&line, mem, curr_mem_add, &token_table)
+                    parse_line(&line, mem, curr_mem_add, &token_table, &token_cycle_table)
                 }
             }
             Err(e) => eprintln!("Error reading line {}", e),
@@ -161,13 +164,14 @@ fn parse_line(
     mem: &mut Memory,
     curr_mem_add: &mut u16,
     token_table: &HashMap<&str, Token>,
+    token_cycle_table : &HashMap<Token,u8>
 ) {
     let tokens: Vec<&str> = line.split(" ").collect();
     let amount_of_characters: usize = tokens.len();
     if amount_of_characters == 1 {
-        handle_one_character_line(tokens[0], mem, token_table, curr_mem_add);
+        handle_one_character_line(tokens[0], mem, token_table, curr_mem_add,token_cycle_table);
     } else if amount_of_characters == 2 {
-        handle_two_character_line(tokens, mem, token_table, curr_mem_add);
+        handle_two_character_line(tokens, mem, token_table, curr_mem_add,token_cycle_table);
     }
 }
 
@@ -203,6 +207,7 @@ fn handle_one_character_line(
     mem: &mut Memory,
     token_table: &HashMap<&str, Token>,
     curr_mem_add: &mut u16,
+    token_cycle_table : &HashMap<Token,u8>
 ) {
     let found_token: Token;
 
@@ -211,42 +216,42 @@ fn handle_one_character_line(
         None => panic!("Syntax error {}", token),
     }
     match found_token {
-        Token::ASL => load_relative_value(Token::ASL, mem, curr_mem_add),
-        Token::BCC => load_relative_value(Token::BCC, mem, curr_mem_add),
-        Token::BCS => load_relative_value(Token::BCS, mem, curr_mem_add),
-        Token::BEQ => load_relative_value(Token::BEQ, mem, curr_mem_add),
-        Token::BMI => load_relative_value(Token::BMI, mem, curr_mem_add),
-        Token::BNE => load_relative_value(Token::BNE, mem, curr_mem_add),
-        Token::BPL => load_relative_value(Token::BPL, mem, curr_mem_add),
-        Token::BRK => load_relative_value(Token::BRK, mem, curr_mem_add),
-        Token::BVC => load_relative_value(Token::BVC, mem, curr_mem_add),
-        Token::BVS => load_relative_value(Token::BVS, mem, curr_mem_add),
-        Token::CLC => load_relative_value(Token::CLC, mem, curr_mem_add),
-        Token::CLD => load_relative_value(Token::CLD, mem, curr_mem_add),
-        Token::CLI => load_relative_value(Token::CLI, mem, curr_mem_add),
-        Token::CLV => load_relative_value(Token::CLV, mem, curr_mem_add),
-        Token::DEX => load_relative_value(Token::DEX, mem, curr_mem_add),
-        Token::DEY => load_relative_value(Token::DEY, mem, curr_mem_add),
-        Token::INX => load_relative_value(Token::INX, mem, curr_mem_add),
-        Token::INY => load_relative_value(Token::INY, mem, curr_mem_add),
-        Token::LSR => load_relative_value(Token::LSR, mem, curr_mem_add),
-        Token::NOP => load_relative_value(Token::NOP, mem, curr_mem_add),
-        Token::PHA => load_relative_value(Token::PHA, mem, curr_mem_add),
-        Token::PLA => load_relative_value(Token::PLA, mem, curr_mem_add),
-        Token::PLP => load_relative_value(Token::PLP, mem, curr_mem_add),
-        Token::ROL => load_relative_value(Token::ROL, mem, curr_mem_add),
-        Token::ROR => load_relative_value(Token::ROR, mem, curr_mem_add),
-        Token::RTI => load_relative_value(Token::RTI, mem, curr_mem_add),
-        Token::RTS => load_relative_value(Token::RTS, mem, curr_mem_add),
-        Token::SEC => load_relative_value(Token::SEC, mem, curr_mem_add),
-        Token::SED => load_relative_value(Token::SED, mem, curr_mem_add),
-        Token::SEI => load_relative_value(Token::SEI, mem, curr_mem_add),
-        Token::TAX => load_relative_value(Token::TAX, mem, curr_mem_add),
-        Token::TAY => load_relative_value(Token::TAY, mem, curr_mem_add),
-        Token::TSX => load_relative_value(Token::TSX, mem, curr_mem_add),
-        Token::TXA => load_relative_value(Token::TXA, mem, curr_mem_add),
-        Token::TXS => load_relative_value(Token::TXS, mem, curr_mem_add),
-        Token::TYA => load_relative_value(Token::TYA, mem, curr_mem_add),
+        Token::ASL => load_relative_value(Token::ASL, mem, curr_mem_add,token_cycle_table),
+        Token::BCC => load_relative_value(Token::BCC, mem, curr_mem_add,token_cycle_table),
+        Token::BCS => load_relative_value(Token::BCS, mem, curr_mem_add,token_cycle_table),
+        Token::BEQ => load_relative_value(Token::BEQ, mem, curr_mem_add,token_cycle_table),
+        Token::BMI => load_relative_value(Token::BMI, mem, curr_mem_add,token_cycle_table),
+        Token::BNE => load_relative_value(Token::BNE, mem, curr_mem_add,token_cycle_table),
+        Token::BPL => load_relative_value(Token::BPL, mem, curr_mem_add,token_cycle_table),
+        Token::BRK => load_relative_value(Token::BRK, mem, curr_mem_add,token_cycle_table),
+        Token::BVC => load_relative_value(Token::BVC, mem, curr_mem_add,token_cycle_table),
+        Token::BVS => load_relative_value(Token::BVS, mem, curr_mem_add,token_cycle_table),
+        Token::CLC => load_relative_value(Token::CLC, mem, curr_mem_add,token_cycle_table),
+        Token::CLD => load_relative_value(Token::CLD, mem, curr_mem_add,token_cycle_table),
+        Token::CLI => load_relative_value(Token::CLI, mem, curr_mem_add,token_cycle_table),
+        Token::CLV => load_relative_value(Token::CLV, mem, curr_mem_add,token_cycle_table),
+        Token::DEX => load_relative_value(Token::DEX, mem, curr_mem_add,token_cycle_table),
+        Token::DEY => load_relative_value(Token::DEY, mem, curr_mem_add,token_cycle_table),
+        Token::INX => load_relative_value(Token::INX, mem, curr_mem_add,token_cycle_table),
+        Token::INY => load_relative_value(Token::INY, mem, curr_mem_add,token_cycle_table),
+        Token::LSR => load_relative_value(Token::LSR, mem, curr_mem_add,token_cycle_table),
+        Token::NOP => load_relative_value(Token::NOP, mem, curr_mem_add,token_cycle_table),
+        Token::PHA => load_relative_value(Token::PHA, mem, curr_mem_add,token_cycle_table),
+        Token::PLA => load_relative_value(Token::PLA, mem, curr_mem_add,token_cycle_table),
+        Token::PLP => load_relative_value(Token::PLP, mem, curr_mem_add,token_cycle_table),
+        Token::ROL => load_relative_value(Token::ROL, mem, curr_mem_add,token_cycle_table),
+        Token::ROR => load_relative_value(Token::ROR, mem, curr_mem_add,token_cycle_table),
+        Token::RTI => load_relative_value(Token::RTI, mem, curr_mem_add,token_cycle_table),
+        Token::RTS => load_relative_value(Token::RTS, mem, curr_mem_add,token_cycle_table),
+        Token::SEC => load_relative_value(Token::SEC, mem, curr_mem_add,token_cycle_table),
+        Token::SED => load_relative_value(Token::SED, mem, curr_mem_add,token_cycle_table),
+        Token::SEI => load_relative_value(Token::SEI, mem, curr_mem_add,token_cycle_table),
+        Token::TAX => load_relative_value(Token::TAX, mem, curr_mem_add,token_cycle_table),
+        Token::TAY => load_relative_value(Token::TAY, mem, curr_mem_add,token_cycle_table),
+        Token::TSX => load_relative_value(Token::TSX, mem, curr_mem_add,token_cycle_table),
+        Token::TXA => load_relative_value(Token::TXA, mem, curr_mem_add,token_cycle_table),
+        Token::TXS => load_relative_value(Token::TXS, mem, curr_mem_add,token_cycle_table),
+        Token::TYA => load_relative_value(Token::TYA, mem, curr_mem_add,token_cycle_table),
         _ => panic!("NO TOKEN FOUND FOR RELATIVE VALUE"),
     }
 }
@@ -289,6 +294,7 @@ fn handle_two_character_line(
     mem: &mut Memory,
     token_table: &HashMap<&str, Token>,
     curr_mem_add: &mut u16,
+    token_cycle_table : &HashMap<Token,u8>
 ) {
     let token: &str = tokens[0];
     let found_token: Token;
@@ -305,8 +311,8 @@ fn handle_two_character_line(
     }
     let value: &str = &command[1..];
     match special_character {
-        '#' => load_immediate_command(found_token, value, mem, curr_mem_add),
-        '$' => load_mem_location_command(found_token, value, mem, curr_mem_add),
+        '#' => load_immediate_command(found_token, value, mem, curr_mem_add,token_cycle_table),
+        '$' => load_mem_location_command(found_token, value, mem, curr_mem_add,token_cycle_table),
         _ => println!("default"),
     }
 }
@@ -334,46 +340,46 @@ fn handle_two_character_line(
 /// let mut curr_mem_add = 0x00u16;
 /// load_immediate_command(Token::LDA, "0xFF", &mut mem, &mut curr_mem_add);
 /// ```
-fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16,token_cycle_table : &HashMap<Token,u8>) {
     match token {
         Token::LDA => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::LDX => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::LDY => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::ADC => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::AND => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::CMP => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::CPX => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::CPY => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::EOR => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::ORA => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::ROL => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::ROR => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         Token::SBC => {
-            load_immediate_value(token, value, mem, curr_mem_add);
+            load_immediate_value(token, value, mem, curr_mem_add,token_cycle_table);
         }
         _ => panic!("NO FOUND TOKEN FOR IMMEDIATE COMMAND"),
     }
@@ -402,31 +408,31 @@ fn load_immediate_command(token: Token, value: &str, mem: &mut Memory, curr_mem_
 /// let mut curr_mem_add = 0x1000u16;
 /// load_mem_location_command(Token::LDA, "0xFF00", &mut mem, &mut curr_mem_add);
 /// ```
-fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16,token_cycle_table : &HashMap<Token,u8>) {
     match token {
-        Token::LDA => load_memory_location(token, value, curr_mem_add, mem),
-        Token::LDX => load_memory_location(token, value, curr_mem_add, mem),
-        Token::LDY => load_memory_location(token, value, curr_mem_add, mem),
-        Token::ADC => load_memory_location(token, value, curr_mem_add, mem),
-        Token::STA => load_memory_location(token, value, curr_mem_add, mem),
-        Token::STX => load_memory_location(token, value, curr_mem_add, mem),
-        Token::STY => load_memory_location(token, value, curr_mem_add, mem),
-        Token::JMP => load_memory_location(token, value, curr_mem_add, mem),
-        Token::JSR => load_memory_location(token, value, curr_mem_add, mem),
-        Token::AND => load_memory_location(token, value, curr_mem_add, mem),
-        Token::ASL => load_memory_location(token, value, curr_mem_add, mem),
-        Token::BIT => load_memory_location(token, value, curr_mem_add, mem),
-        Token::CMP => load_memory_location(token, value, curr_mem_add, mem),
-        Token::CPX => load_memory_location(token, value, curr_mem_add, mem),
-        Token::CPY => load_memory_location(token, value, curr_mem_add, mem),
-        Token::DEC => load_memory_location(token, value, curr_mem_add, mem),
-        Token::EOR => load_memory_location(token, value, curr_mem_add, mem),
-        Token::INC => load_memory_location(token, value, curr_mem_add, mem),
-        Token::LSR => load_memory_location(token, value, curr_mem_add, mem),
-        Token::ORA => load_memory_location(token, value, curr_mem_add, mem),
-        Token::ROL => load_memory_location(token, value, curr_mem_add, mem),
-        Token::ROR => load_memory_location(token, value, curr_mem_add, mem),
-        Token::SBC => load_memory_location(token, value, curr_mem_add, mem),
+        Token::LDA => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::LDX => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::LDY => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::ADC => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::STA => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::STX => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::STY => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::JMP => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::JSR => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::AND => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::ASL => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::BIT => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::CMP => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::CPX => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::CPY => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::DEC => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::EOR => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::INC => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::LSR => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::ORA => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::ROL => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::ROR => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
+        Token::SBC => load_memory_location(token, value, curr_mem_add, mem,token_cycle_table),
         _ => panic!("NO FOUND TOKEN FOR MEM LOCATION COMMAND"),
     }
 }
@@ -455,167 +461,167 @@ fn load_mem_location_command(token: Token, value: &str, mem: &mut Memory, curr_m
 /// let mut curr_mem_add = 0x1000u16;
 /// load_memory_location(Token::LDA, "0x00FF", &mut curr_mem_add, &mut mem);
 /// ```
-fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory,token_cycle_table : &HashMap<Token,u8>) {
     match token {
         Token::LDA => {
             if is_zero_page(value) {
-                load_zero_page(Token::LdaZP, value, curr_mem_add, mem)
+                load_zero_page(Token::LdaZP, value, curr_mem_add, mem,token_cycle_table)
             } else {
-                load_mem_page(Token::LdaAP, value, curr_mem_add, mem);
+                load_mem_page(Token::LdaAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::LDX => {
             if is_zero_page(value) {
-                load_zero_page(Token::LdxZP, value, curr_mem_add, mem)
+                load_zero_page(Token::LdxZP, value, curr_mem_add, mem,token_cycle_table)
             } else {
-                load_mem_page(Token::LdxAP, value, curr_mem_add, mem);
+                load_mem_page(Token::LdxAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::LDY => {
             if is_zero_page(value) {
-                load_zero_page(Token::LdyZP, value, curr_mem_add, mem)
+                load_zero_page(Token::LdyZP, value, curr_mem_add, mem,token_cycle_table)
             } else {
-                load_mem_page(Token::LdyAP, value, curr_mem_add, mem);
+                load_mem_page(Token::LdyAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::ADC => {
             if is_zero_page(value) {
-                load_zero_page(Token::AdcZP, value, curr_mem_add, mem);
+                load_zero_page(Token::AdcZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::AdcAP, value, curr_mem_add, mem);
+                load_mem_page(Token::AdcAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::STA => {
             if is_zero_page(value) {
-                load_zero_page(Token::STA, value, curr_mem_add, mem);
+                load_zero_page(Token::STA, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::StaAP, value, curr_mem_add, mem);
+                load_mem_page(Token::StaAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::STX => {
             if is_zero_page(value) {
-                load_zero_page(Token::StxZP, value, curr_mem_add, mem);
+                load_zero_page(Token::STX, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::StxAP, value, curr_mem_add, mem);
+                load_mem_page(Token::StxAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::STY => {
             if is_zero_page(value) {
-                load_zero_page(Token::StyZP, value, curr_mem_add, mem);
+                load_zero_page(Token::STY, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::StyAP, value, curr_mem_add, mem);
+                load_mem_page(Token::StyAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::JMP => {
             if is_zero_page(value) {
-                load_zero_page(Token::JMP, value, curr_mem_add, mem);
+                load_zero_page(Token::JMP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::JMP, value, curr_mem_add, mem);
+                load_mem_page(Token::JMP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::JSR => {
             if is_zero_page(value) {
-                load_zero_page(Token::JSR, value, curr_mem_add, mem);
+                load_zero_page(Token::JSR, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::JSR, value, curr_mem_add, mem);
+                load_mem_page(Token::JSR, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::AND => {
             if is_zero_page(value) {
-                load_zero_page(Token::AndZP, value, curr_mem_add, mem);
+                load_zero_page(Token::AndZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::AndAP, value, curr_mem_add, mem);
+                load_mem_page(Token::AndAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::ASL => {
             if is_zero_page(value) {
-                load_zero_page(Token::AslZP, value, curr_mem_add, mem);
+                load_zero_page(Token::AslZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::AslAP, value, curr_mem_add, mem);
+                load_mem_page(Token::AslAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::BIT => {
             if is_zero_page(value) {
-                load_zero_page(Token::BIT, value, curr_mem_add, mem);
+                load_zero_page(Token::BIT, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::BitAP, value, curr_mem_add, mem);
+                load_mem_page(Token::BitAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::CMP => {
             if is_zero_page(value) {
-                load_zero_page(Token::CmpZP, value, curr_mem_add, mem);
+                load_zero_page(Token::CmpZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::CmpAP, value, curr_mem_add, mem);
+                load_mem_page(Token::CmpAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::CPX => {
             if is_zero_page(value) {
-                load_zero_page(Token::CpxZP, value, curr_mem_add, mem);
+                load_zero_page(Token::CpxZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::CpxAP, value, curr_mem_add, mem);
+                load_mem_page(Token::CpxAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::CPY => {
             if is_zero_page(value) {
-                load_zero_page(Token::CpyZP, value, curr_mem_add, mem);
+                load_zero_page(Token::CpyZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::CpyAP, value, curr_mem_add, mem);
+                load_mem_page(Token::CpyAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::DEC => {
             if is_zero_page(value) {
-                load_zero_page(Token::DEC, value, curr_mem_add, mem);
+                load_zero_page(Token::DEC, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::DecAP, value, curr_mem_add, mem);
+                load_mem_page(Token::DecAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::EOR => {
             if is_zero_page(value) {
-                load_zero_page(Token::EorZP, value, curr_mem_add, mem);
+                load_zero_page(Token::EorZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::EorAP, value, curr_mem_add, mem);
+                load_mem_page(Token::EorAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::INC => {
             if is_zero_page(value) {
-                load_zero_page(Token::INC, value, curr_mem_add, mem);
+                load_zero_page(Token::INC, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::IncAP, value, curr_mem_add, mem);
+                load_mem_page(Token::IncAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::LSR => {
             if is_zero_page(value) {
-                load_zero_page(Token::LsrZP, value, curr_mem_add, mem);
+                load_zero_page(Token::LsrZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::LsrAP, value, curr_mem_add, mem);
+                load_mem_page(Token::LsrAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::ORA => {
             if is_zero_page(value) {
-                load_zero_page(Token::OraZP, value, curr_mem_add, mem);
+                load_zero_page(Token::OraZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::OraAP, value, curr_mem_add, mem);
+                load_mem_page(Token::OraAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::ROL => {
             if is_zero_page(value) {
-                load_zero_page(Token::RolZP, value, curr_mem_add, mem);
+                load_zero_page(Token::RolZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::RolAP, value, curr_mem_add, mem);
+                load_mem_page(Token::RolAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::ROR => {
             if is_zero_page(value) {
-                load_zero_page(Token::RorZP, value, curr_mem_add, mem);
+                load_zero_page(Token::RorZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::RorAP, value, curr_mem_add, mem);
+                load_mem_page(Token::RorAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
         Token::SBC => {
             if is_zero_page(value) {
-                load_zero_page(Token::SbcZP, value, curr_mem_add, mem);
+                load_zero_page(Token::SbcZP, value, curr_mem_add, mem,token_cycle_table);
             } else {
-                load_mem_page(Token::SbcAP, value, curr_mem_add, mem);
+                load_mem_page(Token::SbcAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
 
@@ -646,7 +652,11 @@ fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: 
 ///
 /// This will store the byte corresponding to the `LDA` token in `mem.data[0x1000]`,
 /// and the value `0xFF` (from the hex string `"FF"`) in `mem.data[0x1001]`.
-fn load_zero_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+fn load_zero_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory,token_cycle_table : &HashMap<Token,u8>) {
+    match token_cycle_table.get(&token) {
+        Some(num) => mem.data_cycle_count += *num as u32,
+        None => panic!("Cycle Error"),
+    }
     mem.data[*curr_mem_add as usize] = token as u8;
     *curr_mem_add += 1;
     mem.data[*curr_mem_add as usize] = convert_hex_string_to_u8(value);
@@ -679,7 +689,11 @@ fn load_zero_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut M
 ///
 /// # Note
 /// The `value` string is expected to have at least four characters, as it represents a 16-bit value (two bytes).
-fn load_mem_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory) {
+fn load_mem_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Memory,token_cycle_table : &HashMap<Token,u8>) {
+    match token_cycle_table.get(&token) {
+        Some(num) => mem.data_cycle_count += *num as u32,
+        None => panic!("Cycle Error"),
+    }
     mem.data[*curr_mem_add as usize] = token as u8;
     *curr_mem_add += 1;
     let h_byte: u8 = convert_hex_string_to_u8(&value[0..2]);
@@ -719,7 +733,11 @@ fn load_mem_page(token: Token, value: &str, curr_mem_add: &mut u16, mem: &mut Me
 /// # Notes
 /// - The `value` string must either be in hexadecimal (starting with `0x`) or a regular string. The function handles both cases.
 /// - If the value is in hexadecimal, it is expected to be prefixed by `0x` (e.g., `0xFF`).
-fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16) {
+fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_add: &mut u16,token_cycle_table : &HashMap<Token,u8>) {
+    match token_cycle_table.get(&token) {
+        Some(num) => mem.data_cycle_count += *num as u32,
+        None => panic!("Cycle Error"),
+    }
     if is_hex(value) {
         mem.data[*curr_mem_add as usize] = token as u8;
         *curr_mem_add += 1;
@@ -756,7 +774,11 @@ fn load_immediate_value(token: Token, value: &str, mem: &mut Memory, curr_mem_ad
 /// # Notes
 /// - This function is typically used for operations that involve relative addressing (like branch instructions),
 ///   where only the token is stored and the actual relative value will be added in a later step.
-fn load_relative_value(token: Token, mem: &mut Memory, curr_mem_add: &mut u16) {
+fn load_relative_value(token: Token, mem: &mut Memory, curr_mem_add: &mut u16,token_cycle_table : &HashMap<Token,u8>) {
+    match token_cycle_table.get(&token) {
+        Some(num) => mem.data_cycle_count += *num as u32,
+        None => panic!("Cycle Error"),
+    }
     mem.data[*curr_mem_add as usize] = token as u8;
     *curr_mem_add += 1;
 }
