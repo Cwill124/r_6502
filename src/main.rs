@@ -6,6 +6,8 @@ mod cpu;
 mod memory;
 mod token;
 mod util;
+mod asm_runner;
+
 fn print_memory_table(memory: &[u8]) {
     let mut stop: bool = false;
     let mut i: usize = 0;
@@ -14,7 +16,7 @@ fn print_memory_table(memory: &[u8]) {
 
     while !stop {
         let value = memory[i];
-        if i < 150 {
+        if i < 15 {
             let hex_string = format!("{:04X}", i);
             let hex_value = format!("{:02X}", value);
             let bin = format!("{:08b}", value);
@@ -33,5 +35,7 @@ fn main() {
     let mut cpu = CPU::new();
     let mut starting_add: u16 = 0;
     read_asm_file("test.asm".to_string(), &mut cpu.memory, &mut starting_add);
-    print_memory_table(&cpu.memory.data);
+    //print_memory_table(&cpu.memory.data);
+    cpu.execute_memory();
 }
+

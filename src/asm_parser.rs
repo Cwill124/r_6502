@@ -297,7 +297,6 @@ fn handle_two_character_line(
         Some(t) => found_token = t.clone(),
         None => panic!("Syntax error {}", token),
     }
-    println!("{:?} is the token", found_token);
     let special_character: char;
 
     match command.chars().nth(0) {

@@ -1,4 +1,5 @@
 use crate::memory::{self, Memory};
+use crate::asm_runner;
 
 pub struct CPU {
     pub pc: u16,
@@ -32,13 +33,9 @@ impl CPU {
         cpu.memory.initialise();
         cpu
     }
-    pub fn fetch_address_value(mut self, cycles: &mut u32) -> u8 {
-        let value: u8 = self.memory.data[self.pc as usize];
 
-        self.pc += 1;
+    pub fn execute_memory(&mut self) {
+        asm_runner::run_memory(self)
 
-        *cycles -= 1;
-
-        return value;
     }
 }
