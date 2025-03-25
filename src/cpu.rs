@@ -7,6 +7,10 @@ pub struct CPU {
 
     pub memory: Memory,
 
+    pub x: u8,
+    pub a: u8,
+    pub y: u8,
+
     pub c: u8, // Carry Flag
     pub z: u8, // Zero Flag
     pub i: u8, // Interrupt Disable
@@ -29,6 +33,9 @@ impl CPU {
             b: 0,
             v: 0,
             n: 0,
+            x: 0,
+            a: 0,
+            y: 0,
         };
         cpu.memory.init();
         cpu

@@ -512,20 +512,8 @@ fn load_memory_location(token: Token, value: &str, curr_mem_add: &mut u16, mem: 
                 load_mem_page(Token::StyAP, value, curr_mem_add, mem,token_cycle_table);
             }
         }
-        Token::JMP => {
-            if is_zero_page(value) {
-                load_zero_page(Token::JMP, value, curr_mem_add, mem,token_cycle_table);
-            } else {
-                load_mem_page(Token::JMP, value, curr_mem_add, mem,token_cycle_table);
-            }
-        }
-        Token::JSR => {
-            if is_zero_page(value) {
-                load_zero_page(Token::JSR, value, curr_mem_add, mem,token_cycle_table);
-            } else {
-                load_mem_page(Token::JSR, value, curr_mem_add, mem,token_cycle_table);
-            }
-        }
+        Token::JMP => load_mem_page(Token::JMP, value, curr_mem_add, mem,token_cycle_table),
+        Token::JSR => load_mem_page(Token::JSR, value, curr_mem_add, mem,token_cycle_table),
         Token::AND => {
             if is_zero_page(value) {
                 load_zero_page(Token::AndZP, value, curr_mem_add, mem,token_cycle_table);

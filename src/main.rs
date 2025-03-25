@@ -35,9 +35,11 @@ fn print_memory_table(memory: &[u8]) {
 fn main() {
     let mut cpu = CPU::new();
     let mut starting_add: u16 = 0;
-    read_asm_file("../test.asm".to_string(), &mut cpu.memory, &mut starting_add);
-    println!("{}",cpu.memory.data_cycle_count);
+    read_asm_file("test.asm".to_string(), &mut cpu.memory, &mut starting_add);
     //print_memory_table(&cpu.memory.data);
-    //cpu.execute_memory();
+    cpu.execute_memory();
+    println!("{}",cpu.a);
+    println!("{}",cpu.x);
+    println!("{}",cpu.y);
 }
 
