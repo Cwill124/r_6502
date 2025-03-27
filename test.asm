@@ -1,3 +1,3 @@
-LDA #10
-LDY #100
+LDY #0
 LDX #242
+LDA #$FF

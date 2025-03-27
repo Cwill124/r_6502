@@ -1,5 +1,6 @@
-use crate::memory::{self, Memory};
 use crate::asm_runner;
+use crate::memory::{self, Memory};
+use crate::util::check_7_bit;
 
 pub struct CPU {
     pub pc: u16,
@@ -43,6 +44,57 @@ impl CPU {
 
     pub fn execute_memory(&mut self) {
         asm_runner::run_memory(self)
-
+    }
+    pub fn check_n_flag(&mut self, register: u8) {
+        match register {
+            0 => {
+                if check_7_bit(self.a) {
+                    self.n = 1
+                } else {
+                    self.n = 0;
+                }
+            }
+            1 => {
+                if check_7_bit(self.a) {
+                    self.n = 1
+                } else {
+                    self.n = 0;
+                }
+            }
+            2 => {
+                if check_7_bit(self.a) {
+                    self.n = 1
+                } else {
+                    self.n = 0;
+                }
+            }
+            _ => println!("Error unknown register"),
+        }
+    }
+    pub fn check_z_flag(&mut self, register: u8) {
+        match register {
+            0 => {
+                if self.a == 0 {
+                    self.z = 1
+                } else {
+                    self.z = 0;
+                }
+            }
+            1 => {
+                if self.x == 0 {
+                    self.z = 1
+                } else {
+                    self.z = 0;
+                }
+            }
+            2 => {
+                if self.y == 0 {
+                    self.z = 1
+                } else {
+                    self.z = 0;
+                }
+            }
+            _ => println!("Error unknown register"),
+        }
     }
 }

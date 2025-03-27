@@ -20,3 +20,9 @@ pub fn convert_string_to_u16(value: &str) -> u16 {
         Err(_) => panic!("Failed to parse value as u8: {}", value),
     }
 }
+pub fn combine_address(low_byte: u8, high_byte: u8) -> u16 {
+    ((high_byte as u16) << 8) | (low_byte as u16)
+}
+pub fn check_7_bit(value: u8) -> bool {
+    value & 0x80 != 0
+}

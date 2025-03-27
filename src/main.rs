@@ -2,12 +2,12 @@ use asm_parser::read_asm_file;
 use cpu::CPU;
 
 mod asm_parser;
+mod asm_runner;
 mod cpu;
+mod cycle_map;
 mod memory;
 mod token;
 mod util;
-mod asm_runner;
-mod cycle_map;
 
 fn print_memory_table(memory: &[u8]) {
     let mut stop: bool = false;
@@ -17,7 +17,7 @@ fn print_memory_table(memory: &[u8]) {
 
     while !stop {
         let value = memory[i];
-        if i < 15 {
+        if i < 10 {
             let hex_string = format!("{:04X}", i);
             let hex_value = format!("{:02X}", value);
             let bin = format!("{:08b}", value);
@@ -36,10 +36,11 @@ fn main() {
     let mut cpu = CPU::new();
     let mut starting_add: u16 = 0;
     read_asm_file("test.asm".to_string(), &mut cpu.memory, &mut starting_add);
-    //print_memory_table(&cpu.memory.data);
+    print_memory_table(&cpu.memory.data);
     cpu.execute_memory();
-    println!("{}",cpu.a);
-    println!("{}",cpu.x);
-    println!("{}",cpu.y);
+    println!("{}", cpu.a);
+    println!("{}", cpu.x);
+    println!("{}", cpu.y);
+    println!("n: {}", cpu.n);
+    println!("z: {}", cpu.z);
 }
-
